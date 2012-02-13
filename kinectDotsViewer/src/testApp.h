@@ -21,11 +21,16 @@ class testApp : public ofBaseApp{
 		void gotMessage(ofMessage msg);
     
     void loadData();
+    ofPoint getNextPoint();
+    
     vector<ofPolyline> lines;
     bool showNums;
     bool showLines;
     
+    ofPoint currentPoint;
     
-    //TiXmlDocument doc;
+    int currentPointNum;
+    int currentLineNum;
+    
         
 };

@@ -5,6 +5,10 @@ void testApp::setup(){
     loadData();
     showNums = true;
     showLines = true;
+    currentPointNum = 0;
+    currentLineNum = 0;
+    currentPoint =   getNextPoint();
+ 
 }
 
 //--------------------------------------------------------------
@@ -18,9 +22,9 @@ void testApp::draw(){
     ofBackground(255);
     ofSetColor(0);
     for(int i = 0; i < lines.size(); i++){
-        if(showLines){
-            lines.at(i).draw();
-        }
+      if(showLines){
+        lines.at(i).draw();
+      }
       vector<ofPoint> points = lines.at(i).getVertices();
         
       for(int i = 0; i < points.size(); i++){
@@ -32,10 +36,36 @@ void testApp::draw(){
       }
     }
     
-            
+    ofSetColor(255,0,0);
+
+    ofCircle(currentPoint.x, currentPoint.y, 5);
+}
+
+ofPoint testApp::getNextPoint(){
+    if(currentLineNum >= lines.size()){
+        currentLineNum = 0;
+    }
+    
+    cout << "line " << currentLineNum <<  "/" << lines.size() -1 << "point " << currentPointNum << "/" << lines.at(currentLineNum).getVertices().size() -1 << endl;
+    
+    ofPolyline line = lines.at(currentLineNum);
+    ofPoint result = line[currentPointNum];
+    
+    currentPointNum++;
+    
+ 
+    
+    if(currentPointNum >= lines.at(currentLineNum).getVertices().size()){
+        currentPointNum = 0;
+        currentLineNum++;
+
+    }
+    
+    return result;
 }
 
 void testApp::loadData(){
+    cout << "here" << endl;
     ofFileDialogResult result = ofSystemLoadDialog("Please select a file");    
     
     ofxXmlSettings xml;
@@ -58,19 +88,7 @@ void testApp::loadData(){
         lines.push_back(line);
         
         xml.popTag();
-        
     }
-    
-    cout << "numLines: " << lines.size() << endl;
-
-    
-  //  if (!pElem) return false;
-    
-    //hRoot = TiXmlHandle(pElem);
-    
-    //const char *attribval = hRoot.FirstChild("card").ToElement()->Attribute("card");
-    //pElem = hDoc.FirstChild("EGCs").Child("card", 1).ToElement();
-
 }
 
 //--------------------------------------------------------------
@@ -81,6 +99,10 @@ void testApp::keyPressed(int key){
     
     if(key == 'l'){
         showLines = !showLines;
+    }
+    
+    if(key == ' '){
+        currentPoint = getNextPoint();
     }
 
 }
