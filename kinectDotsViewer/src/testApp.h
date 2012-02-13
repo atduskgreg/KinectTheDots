@@ -22,15 +22,25 @@ class testApp : public ofBaseApp{
     
     void loadData();
     ofPoint getNextPoint();
+    ofPoint getCurrentPoint();
     
     vector<ofPolyline> lines;
     bool showNums;
     bool showLines;
+    bool showAllPoints;
+    
+    int canvasScale;
+    
+    ofFbo canvas;
     
     ofPoint currentPoint;
+    ofPoint nextPoint;
     
     int currentPointNum;
     int currentLineNum;
+    
+    int nextPointNum;
+    int nextLineNum;
     
         
 };
