@@ -25,6 +25,9 @@ class testApp : public ofBaseApp{
     ofPoint getCurrentPoint();
     
     vector<ofPolyline> lines;
+    
+    vector<ofPolyline> drawing;
+    
     bool showNums;
     bool showLines;
     bool showAllPoints;

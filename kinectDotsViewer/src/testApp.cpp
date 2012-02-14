@@ -16,15 +16,16 @@ void testApp::setup(){
     currentPoint =   getCurrentPoint();
     nextPoint = getNextPoint();
     
-    canvasScale = 8;
+    canvasScale = 1 ;
     
     canvas.allocate(ofGetWidth() * canvasScale, ofGetHeight() * canvasScale);
- 
+    
+    drawing.push_back(ofPolyline());
+    
 }
 
 //--------------------------------------------------------------
 void testApp::update(){
-
 
 }
 
@@ -34,8 +35,9 @@ void testApp::draw(){
     canvas.begin();
     ofPushMatrix();
     ofClear(255,0);
+    ofTranslate(-1 * (currentPoint.x * canvasScale) + ofGetWidth()/2, -1 * (currentPoint.y * canvasScale) + ofGetHeight()/2);
 
-    ofScale(canvasScale, canvasScale);
+    //ofScale(canvasScale, canvasScale);
     ofSetColor(0);
     for(int i = 0; i < lines.size(); i++){
         if(showLines){
@@ -55,26 +57,43 @@ void testApp::draw(){
         }
     }
     
+    
     ofSetColor(255,0,0);
     ofCircle(currentPoint.x, currentPoint.y, 2);
+    // have to store drawing points in scaled and translated space
+    if(drawing.size() > 0 && drawing.at(0).getVertices().size() > 0){
+       // cout << "drawing start: " << drawing.at(0).getVertices()[0].x << " " << drawing.at(0).getVertices()[0].y << endl;
+    }
+
+    for(int i = 0; i < drawing.size(); i++){
+        ofPushStyle();
+        ofSetColor(0, 0, 255);
+        ofSetLineWidth(2);
+        ofPushMatrix();
+        drawing.at(i).draw();
+        ofPopMatrix();
+        ofPopStyle();
+    }
+
+    
     ofPopMatrix();
     canvas.end();
     
     if(lines.size() > 0){
 
-        ofTranslate(-1 * (currentPoint.x * canvasScale) + ofGetWidth()/2, -1 * (currentPoint.y * canvasScale) + ofGetHeight()/2);
         ofSetColor(255);
         canvas.draw(0,0);
     }
-    
-}
+
+        
+   }
 
 ofPoint testApp::getNextPoint(){
     if(nextLineNum >= lines.size()){
         nextLineNum = 0;
     }
     
-    cout << "line: " << nextLineNum <<  "/" << lines.size() -1 << " point: " << nextPointNum << "/" << lines.at(nextLineNum).getVertices().size() -1 << endl;
+   // cout << "line: " << nextLineNum <<  "/" << lines.size() -1 << " point: " << nextPointNum << "/" << lines.at(nextLineNum).getVertices().size() -1 << endl;
     
     ofPolyline line = lines.at(nextLineNum);
     ofPoint result = line[nextPointNum];
@@ -98,7 +117,7 @@ ofPoint testApp::getCurrentPoint(){
         currentLineNum = 0;
     }
     
-    cout << "line: " << currentLineNum <<  "/" << lines.size() -1 << " point: " << currentPointNum << "/" << lines.at(currentLineNum).getVertices().size() -1 << endl;
+   // cout << "line: " << currentLineNum <<  "/" << lines.size() -1 << " point: " << currentPointNum << "/" << lines.at(currentLineNum).getVertices().size() -1 << endl;
     
     ofPolyline line = lines.at(currentLineNum);
     ofPoint result = line[currentPointNum];
@@ -180,7 +199,14 @@ void testApp::keyReleased(int key){
 
 //--------------------------------------------------------------
 void testApp::mouseMoved(int x, int y ){
+    //cout << "c.x " << currentPoint.x << " c.y: " << currentPoint.y << " x: " << x  << " y: " << y  << endl;
+    
+    cout << "xDiff: " << currentPoint.x - x << " yDiff " << currentPoint.y - y << endl;
+    
+    //ofTranslate(-1* (-1 * (currentPoint.x * canvasScale) + ofGetWidth()/2), -1*(-1 * (currentPoint.y * canvasScale) + ofGetHeight()/2));
 
+    
+    drawing.at(0).addVertex(ofPoint(x + (-1* (-1 * (currentPoint.x * canvasScale) + ofGetWidth()/2)), y + (-1*(-1 * (currentPoint.y * canvasScale) + ofGetHeight()/2))));
 }
 
 //--------------------------------------------------------------
