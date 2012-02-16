@@ -24,6 +24,8 @@ class testApp : public ofBaseApp{
     ofPoint getNextPoint();
     ofPoint getCurrentPoint();
     
+    ofPoint convertToDrawingPoint(ofPoint p);
+    
     vector<ofPolyline> lines;
     
     vector<ofPolyline> drawing;
