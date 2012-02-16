@@ -1,8 +1,5 @@
 #include "testApp.h"
 
-// TODO:
-// capture the need for skips
-
 //--------------------------------------------------------------
 void testApp::setup(){
     loadNewImage();

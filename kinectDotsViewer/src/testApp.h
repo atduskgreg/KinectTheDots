@@ -34,7 +34,7 @@ class testApp : public ofBaseApp{
     
     int canvasScale;
     
-    ofFbo canvas;
+    ofFbo canvas, drawingCanvas;
     
     ofPoint currentPoint;
     ofPoint nextPoint;

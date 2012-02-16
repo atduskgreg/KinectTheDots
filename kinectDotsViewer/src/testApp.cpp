@@ -19,6 +19,8 @@ void testApp::setup(){
     canvasScale = 1 ;
     
     canvas.allocate(ofGetWidth() * canvasScale, ofGetHeight() * canvasScale);
+    drawingCanvas.allocate(ofGetWidth() * canvasScale, ofGetHeight() * canvasScale);
+
     
     drawing.push_back(ofPolyline());
     
@@ -31,6 +33,7 @@ void testApp::update(){
 
 //--------------------------------------------------------------
 void testApp::draw(){
+
     ofBackground(255);
     canvas.begin();
     ofPushMatrix();
@@ -57,14 +60,22 @@ void testApp::draw(){
         }
     }
     
-    
+    ofPushStyle();
     ofSetColor(255,0,0);
     ofCircle(currentPoint.x, currentPoint.y, 2);
+    ofPopStyle();
     // have to store drawing points in scaled and translated space
     if(drawing.size() > 0 && drawing.at(0).getVertices().size() > 0){
        // cout << "drawing start: " << drawing.at(0).getVertices()[0].x << " " << drawing.at(0).getVertices()[0].y << endl;
     }
-
+    
+    ofPopMatrix();
+    canvas.end();
+    
+    drawingCanvas.begin();
+    ofTranslate(-1 * (currentPoint.x * canvasScale) + ofGetWidth()/2, -1 * (currentPoint.y * canvasScale) + ofGetHeight()/2);
+    ofPushStyle();
+    ofClear(255,0);
     for(int i = 0; i < drawing.size(); i++){
         ofPushStyle();
         ofSetColor(0, 0, 255);
@@ -74,15 +85,19 @@ void testApp::draw(){
         ofPopMatrix();
         ofPopStyle();
     }
-
-    
-    ofPopMatrix();
-    canvas.end();
+    ofPopStyle();
+    drawingCanvas.end();
     
     if(lines.size() > 0){
 
-        ofSetColor(255);
+        ofSetColor(255,255,255,255);
+
+        ofEnableAlphaBlending();
+
         canvas.draw(0,0);
+        drawingCanvas.draw(0,0);
+        
+        
     }
 
         
