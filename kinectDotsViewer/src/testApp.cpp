@@ -2,6 +2,9 @@
 
 //--------------------------------------------------------------
 void testApp::setup(){
+    totalPointsHit = 0;
+    totalPointCount = 0;
+    
     loadData();
     showNums = true;
     showAllPoints = true;
@@ -12,6 +15,8 @@ void testApp::setup(){
     
     nextPointNum = 1;
     nextLineNum = 0;
+    
+
     
     currentPoint =   getCurrentPoint();
     nextPoint = getNextPoint();
@@ -34,16 +39,6 @@ void testApp::update(){
 void testApp::transformView(){
     ofPoint viewTarget = getViewTarget();
     
-    
-   // float d = ofDist(currentPoint.x, currentPoint.y, nextPoint.x, nextPoint.y);
-   // canvasScale = ofMap(d, 8, 80, 40, 18 ,true);
-
-    //cout << "d: " << d << " scale " << canvasScale << endl;
-    
-    //ofPoint p = tween.update();
-    
-    cout << "scale: " << currentScale() << " prevScale: " << prevCanvasScale << " tweening scale: " << tween.getTarget(2) << endl;
-    
     ofTranslate(-1 * (tween.update() * tween.getTarget(2)) + ofGetWidth()/2, -1 * (tween.getTarget(1) * tween.getTarget(2)) + ofGetHeight()/2);
     ofScale(tween.getTarget(2), tween.getTarget(2));
 
@@ -51,19 +46,16 @@ void testApp::transformView(){
 
 float testApp::currentScale(){
     float d = ofDist(currentPoint.x, currentPoint.y, nextPoint.x, nextPoint.y);
-    return ofMap(d, 8, 80, 40, 18 ,true);
+    float m = ofMap(d, 6, 38, 65, 5 ,true);
+    
+    return m;
 }
 
 void testApp::animateView(){
-    
-    unsigned duration= 2000;
-    unsigned delay = 500;
-    
-
-    
+    totalPointsHit++;
+    unsigned duration= 1000;
+    unsigned delay = 0;
     ofPoint nextViewTarget = getViewTarget();
-    // getViewTarget()
-    // previousViewTarget 
     tween.setParameters(easingcubic,ofxTween::easeInOut,previousViewTarget.x,nextViewTarget.x,duration,delay); // viewTarget.x
     tween.addValue(previousViewTarget.y, nextViewTarget.y); // viewTarget.y
     tween.addValue(prevCanvasScale, currentScale()); // canvasScale
@@ -132,11 +124,14 @@ void testApp::draw(){
         canvas.draw(0,0);
         drawingCanvas.draw(0,0);
         
-        
+        ofSetColor(0, 0, 0);
+        stringstream output;
+        output << totalPointsHit << "/" << totalPointCount;
+        ofDrawBitmapString(output.str(), ofPoint(10,20));
     }
-
-        
-   }
+    
+    
+}
 
 ofPoint testApp::getViewTarget(){
     
@@ -153,14 +148,10 @@ ofPoint testApp::getNextPoint(){
         nextLineNum = 0;
     }
     
-   // cout << "line: " << nextLineNum <<  "/" << lines.size() -1 << " point: " << nextPointNum << "/" << lines.at(nextLineNum).getVertices().size() -1 << endl;
-    
     ofPolyline line = lines.at(nextLineNum);
     ofPoint result = line[nextPointNum];
     
     nextPointNum++;
-    
-    
     
     if(nextPointNum >= lines.at(nextLineNum).getVertices().size()){
         nextPointNum = 0;
@@ -177,14 +168,10 @@ ofPoint testApp::getCurrentPoint(){
         currentLineNum = 0;
     }
     
-   // cout << "line: " << currentLineNum <<  "/" << lines.size() -1 << " point: " << currentPointNum << "/" << lines.at(currentLineNum).getVertices().size() -1 << endl;
-    
     ofPolyline line = lines.at(currentLineNum);
     ofPoint result = line[currentPointNum];
     
     currentPointNum++;
-    
- 
     
     if(currentPointNum >= lines.at(currentLineNum).getVertices().size()){
         currentPointNum = 0;
@@ -212,6 +199,8 @@ void testApp::loadData(){
         int numPoints = xml.getNumTags("Point");
         for(int j = 0; j < numPoints; j++){        
             line.addVertex(ofPoint(xml.getAttribute("Point", "x", 0, j), xml.getAttribute("Point", "y", 0, j)));
+            totalPointCount++;
+            cout << totalPointCount << endl;
         }
         
         
@@ -275,7 +264,17 @@ void testApp::keyReleased(int key){
 //--------------------------------------------------------------
 void testApp::mouseMoved(int x, int y ){  
     if(!tween.isRunning()){
-        drawing.at(0).addVertex(convertToDrawingPoint(ofPoint(x,y)));
+
+        ofPoint pointInDrawingSpace = convertToDrawingPoint(ofPoint(x,y));
+        
+        cout << "dist: " << ofDist(pointInDrawingSpace.x, pointInDrawingSpace.y, nextPoint.x, nextPoint.y) << endl;
+        
+        if(ofDist(pointInDrawingSpace.x, pointInDrawingSpace.y, nextPoint.x, nextPoint.y) <= 0.5 ){
+            keyPressed(' ');
+        } else {
+                                                            
+            drawing.at(0).addVertex(pointInDrawingSpace);
+        }
     }
 }
 

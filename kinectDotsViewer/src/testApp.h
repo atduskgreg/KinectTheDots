@@ -32,6 +32,9 @@ class testApp : public ofBaseApp{
     
     ofPoint previousViewTarget;
     
+    int totalPointCount;
+    int totalPointsHit;
+    
     ofxTween tween;
     ofxEasingCubic easingcubic;
 
