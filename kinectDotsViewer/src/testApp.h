@@ -2,6 +2,7 @@
 
 #include "ofMain.h"
 #include "ofxXmlSettings.h"
+#include "ofxTween.h"
 
 class testApp : public ofBaseApp{
 
@@ -23,8 +24,17 @@ class testApp : public ofBaseApp{
     void loadData();
     ofPoint getNextPoint();
     ofPoint getCurrentPoint();
+    void animateView();
     void transformView();
     ofPoint getViewTarget();
+    
+    float currentScale();
+    
+    ofPoint previousViewTarget;
+    
+    ofxTween tween;
+    ofxEasingCubic easingcubic;
+
     
     ofPoint convertToDrawingPoint(ofPoint p);
     
@@ -36,7 +46,7 @@ class testApp : public ofBaseApp{
     bool showLines;
     bool showAllPoints;
     
-    int canvasScale;
+    int canvasScale, prevCanvasScale;
     
     ofFbo canvas, drawingCanvas;
     

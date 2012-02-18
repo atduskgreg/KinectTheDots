@@ -34,26 +34,43 @@ void testApp::update(){
 void testApp::transformView(){
     ofPoint viewTarget = getViewTarget();
     
+    
+   // float d = ofDist(currentPoint.x, currentPoint.y, nextPoint.x, nextPoint.y);
+   // canvasScale = ofMap(d, 8, 80, 40, 18 ,true);
+
+    //cout << "d: " << d << " scale " << canvasScale << endl;
+    
+    //ofPoint p = tween.update();
+    
+    cout << "scale: " << currentScale() << " prevScale: " << prevCanvasScale << " tweening scale: " << tween.getTarget(2) << endl;
+    
+    ofTranslate(-1 * (tween.update() * tween.getTarget(2)) + ofGetWidth()/2, -1 * (tween.getTarget(1) * tween.getTarget(2)) + ofGetHeight()/2);
+    ofScale(tween.getTarget(2), tween.getTarget(2));
+
+}
+
+float testApp::currentScale(){
     float d = ofDist(currentPoint.x, currentPoint.y, nextPoint.x, nextPoint.y);
-    canvasScale = ofMap(d, 8, 80, 40, 18 ,true);
-
-    cout << "d: " << d << " scale " << canvasScale << endl;
-    
-    
-    ofTranslate(-1 * (viewTarget.x * canvasScale) + ofGetWidth()/2, -1 * (viewTarget.y * canvasScale) + ofGetHeight()/2);
-    ofScale(canvasScale, canvasScale);
-
+    return ofMap(d, 8, 80, 40, 18 ,true);
 }
 
-ofPoint testApp::getViewTarget(){
+void testApp::animateView(){
     
-    ofPoint result;
+    unsigned duration= 2000;
+    unsigned delay = 500;
     
-    result.x = (currentPoint.x + nextPoint.x)/2;
-    result.y = (currentPoint.y + nextPoint.y)/2;
+
     
-    return result;
+    ofPoint nextViewTarget = getViewTarget();
+    // getViewTarget()
+    // previousViewTarget 
+    tween.setParameters(easingcubic,ofxTween::easeInOut,previousViewTarget.x,nextViewTarget.x,duration,delay); // viewTarget.x
+    tween.addValue(previousViewTarget.y, nextViewTarget.y); // viewTarget.y
+    tween.addValue(prevCanvasScale, currentScale()); // canvasScale
+    tween.start();
 }
+
+
 
 //--------------------------------------------------------------
 void testApp::draw(){
@@ -120,6 +137,16 @@ void testApp::draw(){
 
         
    }
+
+ofPoint testApp::getViewTarget(){
+    
+    ofPoint result;
+    
+    result.x = (currentPoint.x + nextPoint.x)/2;
+    result.y = (currentPoint.y + nextPoint.y)/2;
+    
+    return result;
+}
 
 ofPoint testApp::getNextPoint(){
     if(nextLineNum >= lines.size()){
@@ -197,8 +224,8 @@ void testApp::loadData(){
 ofPoint testApp::convertToDrawingPoint(ofPoint p){
     ofPoint result = ofPoint(p.x, p.y);
     
-    result.x = (p.x + getViewTarget().x * canvasScale - ofGetWidth()/2) / canvasScale;
-    result.y = (p.y + getViewTarget().y * canvasScale - ofGetHeight()/2) / canvasScale;
+    result.x = (p.x + getViewTarget().x * currentScale() - ofGetWidth()/2) / currentScale();
+    result.y = (p.y + getViewTarget().y * currentScale() - ofGetHeight()/2) / currentScale();
     
     return result;
     
@@ -216,8 +243,12 @@ void testApp::keyPressed(int key){
     }
     
     if(key == ' '){
+        prevCanvasScale = currentScale();
+        previousViewTarget = getViewTarget(); // store it before it changes for tweening
+        
         currentPoint = getCurrentPoint();
         nextPoint = getNextPoint();
+        animateView();
     }
     
     if(key == '='){
@@ -242,8 +273,10 @@ void testApp::keyReleased(int key){
 }
 
 //--------------------------------------------------------------
-void testApp::mouseMoved(int x, int y ){    
-    drawing.at(0).addVertex(convertToDrawingPoint(ofPoint(x,y)));
+void testApp::mouseMoved(int x, int y ){  
+    if(!tween.isRunning()){
+        drawing.at(0).addVertex(convertToDrawingPoint(ofPoint(x,y)));
+    }
 }
 
 //--------------------------------------------------------------
