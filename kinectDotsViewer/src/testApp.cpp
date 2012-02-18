@@ -31,15 +31,31 @@ void testApp::update(){
 
 }
 
+void testApp::transformView(){
+    ofPoint viewTarget = getViewTarget();
+    
+    ofTranslate(-1 * (viewTarget.x * canvasScale) + ofGetWidth()/2, -1 * (viewTarget.y * canvasScale) + ofGetHeight()/2);
+    ofScale(canvasScale, canvasScale);
+
+}
+
+ofPoint testApp::getViewTarget(){
+    
+    ofPoint result;
+    
+    result.x = (currentPoint.x + nextPoint.x)/2;
+    result.y = (currentPoint.y + nextPoint.y)/2;
+    
+    return result;
+}
+
 //--------------------------------------------------------------
 void testApp::draw(){
     ofBackground(255);
     
     canvas.begin();
     ofClear(255,0);
-    
-    ofTranslate(-1 * (currentPoint.x * canvasScale) + ofGetWidth()/2, -1 * (currentPoint.y * canvasScale) + ofGetHeight()/2);
-    ofScale(canvasScale, canvasScale);
+    transformView();
     
     ofSetColor(0);
     for(int i = 0; i < lines.size(); i++){
@@ -69,8 +85,8 @@ void testApp::draw(){
     canvas.end();
     
     drawingCanvas.begin();
-    ofTranslate(-1 * (currentPoint.x * canvasScale) + ofGetWidth()/2, -1 * (currentPoint.y * canvasScale) + ofGetHeight()/2);
-    ofScale(canvasScale, canvasScale);
+    
+    transformView();
     
     ofClear(255,0);
     ofSetColor(0, 0, 255);
@@ -175,8 +191,8 @@ void testApp::loadData(){
 ofPoint testApp::convertToDrawingPoint(ofPoint p){
     ofPoint result = ofPoint(p.x, p.y);
     
-    result.x = (p.x + currentPoint.x * canvasScale - ofGetWidth()/2) / canvasScale;
-    result.y = (p.y + currentPoint.y * canvasScale - ofGetHeight()/2) / canvasScale;
+    result.x = (p.x + getViewTarget().x * canvasScale - ofGetWidth()/2) / canvasScale;
+    result.y = (p.y + getViewTarget().y * canvasScale - ofGetHeight()/2) / canvasScale;
     
     return result;
     

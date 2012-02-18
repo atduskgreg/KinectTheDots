@@ -23,6 +23,8 @@ class testApp : public ofBaseApp{
     void loadData();
     ofPoint getNextPoint();
     ofPoint getCurrentPoint();
+    void transformView();
+    ofPoint getViewTarget();
     
     ofPoint convertToDrawingPoint(ofPoint p);
     
