@@ -34,6 +34,12 @@ void testApp::update(){
 void testApp::transformView(){
     ofPoint viewTarget = getViewTarget();
     
+    float d = ofDist(currentPoint.x, currentPoint.y, nextPoint.x, nextPoint.y);
+    canvasScale = ofMap(d, 8, 80, 40, 18 ,true);
+
+    cout << "d: " << d << " scale " << canvasScale << endl;
+    
+    
     ofTranslate(-1 * (viewTarget.x * canvasScale) + ofGetWidth()/2, -1 * (viewTarget.y * canvasScale) + ofGetHeight()/2);
     ofScale(canvasScale, canvasScale);
 
@@ -216,12 +222,12 @@ void testApp::keyPressed(int key){
     
     if(key == '='){
         canvasScale += 1;
-        cout << canvasScale << endl;
+       // cout << canvasScale << endl;
     }
     
     if(key == '-'){
         canvasScale -= 1;
-        cout << canvasScale << endl;
+       // cout << canvasScale << endl;
     }
     
     if(key == 'p'){
