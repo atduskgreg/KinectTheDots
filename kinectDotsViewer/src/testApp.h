@@ -28,6 +28,9 @@ class testApp : public ofBaseApp{
     void transformView();
     ofPoint getViewTarget();
     
+    void drawDots();
+    void drawDrawing();
+    
     float currentScale();
     
     ofPoint previousViewTarget;
@@ -37,7 +40,8 @@ class testApp : public ofBaseApp{
     
     ofxTween tween;
     ofxEasingCubic easingcubic;
-
+    
+    ofImage ink;
     
     ofPoint convertToDrawingPoint(ofPoint p);
     
@@ -48,10 +52,11 @@ class testApp : public ofBaseApp{
     bool showNums;
     bool showLines;
     bool showAllPoints;
+    bool showDebug;
     
     int canvasScale, prevCanvasScale;
     
-    ofFbo canvas, drawingCanvas;
+    ofFbo canvas, drawingCanvas, preview;
     
     ofPoint currentPoint;
     ofPoint nextPoint;

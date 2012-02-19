@@ -16,6 +16,7 @@ void testApp::setup(){
     nextPointNum = 1;
     nextLineNum = 0;
     
+    ink.loadImage("ink2.png");
 
     
     currentPoint =   getCurrentPoint();
@@ -25,14 +26,33 @@ void testApp::setup(){
     
     canvas.allocate(ofGetWidth(), ofGetHeight());
     drawingCanvas.allocate(ofGetWidth(), ofGetHeight());
+    preview.allocate(ofGetWidth(), ofGetHeight());
 
     
     drawing.push_back(ofPolyline());
     
+    drawingCanvas.begin();
+    ofClear(255, 0);
+    drawingCanvas.end();
+    
+    ofSetVerticalSync(true);
 }
 
 //--------------------------------------------------------------
 void testApp::update(){
+    if(!tween.isRunning()){
+        
+        ofPoint pointInDrawingSpace = convertToDrawingPoint(ofPoint(mouseX,mouseY));
+        
+        // cout << "dist: " << ofDist(pointInDrawingSpace.x, pointInDrawingSpace.y, nextPoint.x, nextPoint.y) << endl;
+        
+        if(ofDist(pointInDrawingSpace.x, pointInDrawingSpace.y, nextPoint.x, nextPoint.y) <= 0.5 ){
+            keyPressed(' ');
+        } else {
+            
+            drawing.at(0).addVertex(pointInDrawingSpace);
+        }
+    }
 
 }
 
@@ -62,20 +82,11 @@ void testApp::animateView(){
     tween.start();
 }
 
-
-
-//--------------------------------------------------------------
-void testApp::draw(){
-    ofBackground(255);
-    
-    canvas.begin();
-    ofClear(255,0);
-    transformView();
-    
+void testApp::drawDots(){
     ofSetColor(0);
     for(int i = 0; i < lines.size(); i++){
         if(showLines){
-          lines.at(i).draw();
+            lines.at(i).draw();
         }
         vector<ofPoint> points = lines.at(i).getVertices();
         if(showAllPoints){  
@@ -95,25 +106,67 @@ void testApp::draw(){
     ofSetColor(255,0,0);
     ofCircle(currentPoint.x, currentPoint.y, 1);
     ofPopStyle();
+}
 
+void testApp::drawDrawing(){
+    /*if(lines.size() > 0 && drawing.at(0).getVertices().size() > 2){
+     
+     ofPushStyle();
+     ofPushMatrix();
+     ofEnableAlphaBlending();
+     vector<ofPoint> lastLinePoints = drawing.at(drawing.size() - 1).getResampledBySpacing(0.7).getVertices();
+     ofPoint lastPoint = lastLinePoints.at(lastLinePoints.size() - 1);
+     
+     cout << "x: " << lastPoint.x << " y: " << lastPoint.y << endl;
+     float size = ofRandom(0.1, 1.0);
+     float xOffset = ofRandom(0.1, 1.0);
+     float yOffset = ofRandom(0.1,1.0);
+     
+     float alpha = ofRandom(50,255);
+     ofSetColor(0, alpha);
+     
+     ofTranslate(lastPoint.x - size/2, lastPoint.y - size/2);
+     ink.draw(-xOffset,-yOffset, size, size);
+     ofPopMatrix();
+     ofPopStyle();
+     }*/
+    ofSetColor(0, 0, 255);
+    ofSetLineWidth(2);
     
+    
+    for(int i = 0; i < drawing.size(); i++){
+        drawing.at(i).draw();
+        
+    }
+}
+
+
+//--------------------------------------------------------------
+void testApp::draw(){
+    ofBackground(255);
+    
+    canvas.begin();
+        ofClear(255,0);
+        transformView();
+        drawDots();
     canvas.end();
     
     drawingCanvas.begin();
-    
-    transformView();
-    
-    ofClear(255,0);
-    ofSetColor(0, 0, 255);
-    ofSetLineWidth(2);
-
-    for(int i = 0; i < drawing.size(); i++){
-
-        drawing.at(i).draw();
-
-    }
-
+        ofClear(255,0);
+        transformView();
+        drawDrawing();
     drawingCanvas.end();
+    
+    if(showDebug){
+        preview.begin();
+            ofClear(255,0);
+            bool currentShowAllPoints = showAllPoints;
+            showAllPoints = true;
+            drawDots();
+            showAllPoints = currentShowAllPoints;
+            drawDrawing();
+        preview.end();
+        }
     
     if(lines.size() > 0){
 
@@ -124,13 +177,21 @@ void testApp::draw(){
         canvas.draw(0,0);
         drawingCanvas.draw(0,0);
         
-        ofSetColor(0, 0, 0);
-        stringstream output;
-        output << totalPointsHit << "/" << totalPointCount;
-        ofDrawBitmapString(output.str(), ofPoint(10,20));
-    }
-    
-    
+        if(showDebug){
+       
+            ofSetColor(0, 0, 0);
+            stringstream output;
+            output << totalPointsHit << "/" << totalPointCount;
+            ofDrawBitmapString(output.str(), ofPoint(10,20));
+       
+            ofPushMatrix();
+                ofSetColor(255,255,255,255);
+                ofTranslate(0, ofGetHeight() - preview.getHeight()*0.3);
+                ofScale(0.3, 0.3);
+                preview.draw(0,0);
+            ofPopMatrix();
+            }
+        }   
 }
 
 ofPoint testApp::getViewTarget(){
@@ -253,6 +314,10 @@ void testApp::keyPressed(int key){
     if(key == 'p'){
         showAllPoints = !showAllPoints;
     }
+    
+    if (key == 'd'){
+        showDebug = !showDebug;
+    }
 
 }
 
@@ -263,19 +328,7 @@ void testApp::keyReleased(int key){
 
 //--------------------------------------------------------------
 void testApp::mouseMoved(int x, int y ){  
-    if(!tween.isRunning()){
 
-        ofPoint pointInDrawingSpace = convertToDrawingPoint(ofPoint(x,y));
-        
-        cout << "dist: " << ofDist(pointInDrawingSpace.x, pointInDrawingSpace.y, nextPoint.x, nextPoint.y) << endl;
-        
-        if(ofDist(pointInDrawingSpace.x, pointInDrawingSpace.y, nextPoint.x, nextPoint.y) <= 0.5 ){
-            keyPressed(' ');
-        } else {
-                                                            
-            drawing.at(0).addVertex(pointInDrawingSpace);
-        }
-    }
 }
 
 //--------------------------------------------------------------
