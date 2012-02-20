@@ -17,7 +17,8 @@ void testApp::setup(){
     nextLineNum = 0;
     
     ink.loadImage("ink2.png");
-
+    perlin.loadImage("perlin1.png");
+    
     
     currentPoint =   getCurrentPoint();
     nextPoint = getNextPoint();
@@ -27,7 +28,7 @@ void testApp::setup(){
     canvas.allocate(ofGetWidth(), ofGetHeight());
     drawingCanvas.allocate(ofGetWidth(), ofGetHeight());
     preview.allocate(ofGetWidth(), ofGetHeight());
-
+    noise.allocate(512, 512);
     
     drawing.push_back(ofPolyline());
     
@@ -35,11 +36,59 @@ void testApp::setup(){
     ofClear(255, 0);
     drawingCanvas.end();
     
-    ofSetVerticalSync(true);
+    //setupNoise();
+    
+    float filterFactor = 0.1f;
+    
+    recordContext.setup();	// all nodes created by code -> NOT using the xml config file at all
+	//recordContext.setupUsingXMLFile();
+	recordDepth.setup(&recordContext);
+	recordImage.setup(&recordContext);
+    
+	recordUser.setup(&recordContext);
+	recordUser.setSmoothing(filterFactor);				// built in openni skeleton smoothing...
+	recordUser.setUseMaskPixels(true);
+	recordUser.setUseCloudPoints(false);
+	recordUser.setMaxNumberOfUsers(2);					// use this to set dynamic max number of users (NB: that a hard upper limit is defined by MAX_NUMBER_USERS in ofxUserGenerator)
+    
+	recordHandTracker.setup(&recordContext, 4);
+	recordHandTracker.setSmoothing(filterFactor);		// built in openni hand track smoothing...
+	recordHandTracker.setFilterFactors(filterFactor);	// custom smoothing/filtering (can also set per hand with setFilterFactor)...set them all to 0.1f to begin with
+    
+	recordContext.toggleRegisterViewport();
+	recordContext.toggleMirror();
+    
+    /*
+     kinect.setup();
+     depthGenerator.setup(&kinect);
+     
+     user.setup(&kinect);
+     user.setMaxNumberOfUsers(1);
+     handTracker.setup(&kinect, 4);
+     handTracker.setSmoothing(filterFactor);		// built in openni hand track smoothing...
+     //handTracker.setFilterFactors(filterFactor);
+     kinect.toggleRegisterViewport();
+     kinect.toggleMirror();
+     */
 }
+
 
 //--------------------------------------------------------------
 void testApp::update(){
+    
+    recordContext.update();
+    recordDepth.update();
+    
+    
+     
+     if ( recordHandTracker.getNumTrackedHands() >0){  
+         ofxTrackedHand * hand = recordHandTracker.getHand(0);
+         if(hand->isBeingTracked){
+             cout << "x: " << hand->projectPos.x << " y: " << hand->projectPos.x << endl;
+         }
+     }
+    
+    
     if(!tween.isRunning()){
         
         ofPoint pointInDrawingSpace = convertToDrawingPoint(ofPoint(mouseX,mouseY));
@@ -53,7 +102,38 @@ void testApp::update(){
             drawing.at(0).addVertex(pointInDrawingSpace);
         }
     }
-
+    shader.setUniformTexture("tex0", perlin, 0);
+    noise.begin();
+    shader.begin();
+    
+    
+    //transformView();
+    //perlin.draw(0,0);
+    /* shader.begin();
+     
+     ofMesh mesh;
+     mesh.setMode(OF_PRIMITIVE_TRIANGLE_FAN);
+     
+     float n = 32 * ofDist(mouseX, mouseY, ofGetWidth() / 2, ofGetHeight() / 2) / ofGetWidth();
+     
+     mesh.addVertex(ofVec2f(-n,-n));
+     mesh.addTexCoord(ofVec2f(0,0));
+     
+     mesh.addVertex(ofVec2f(-n,n));
+     mesh.addTexCoord(ofVec2f(0,ofGetHeight()));
+     
+     mesh.addVertex(ofVec2f(n, -n));
+     mesh.addTexCoord(ofVec2f(ofGetWidth(),0));
+     
+     mesh.addVertex(ofVec2f(n,n));    
+     mesh.addTexCoord(ofVec2f(ofGetWidth(), ofGetHeight()));
+     
+     mesh.draw();
+     
+     shader.end();*/
+    
+    noise.end();
+    
 }
 
 void testApp::transformView(){
@@ -61,7 +141,7 @@ void testApp::transformView(){
     
     ofTranslate(-1 * (tween.update() * tween.getTarget(2)) + ofGetWidth()/2, -1 * (tween.getTarget(1) * tween.getTarget(2)) + ofGetHeight()/2);
     ofScale(tween.getTarget(2), tween.getTarget(2));
-
+    
 }
 
 float testApp::currentScale(){
@@ -146,52 +226,75 @@ void testApp::draw(){
     ofBackground(255);
     
     canvas.begin();
-        ofClear(255,0);
-        transformView();
-        drawDots();
+    ofClear(255,0);
+    transformView();
+    drawDots();
     canvas.end();
     
     drawingCanvas.begin();
-        ofClear(255,0);
-        transformView();
-        drawDrawing();
+    ofClear(255,0);
+    transformView();
+    drawDrawing();
     drawingCanvas.end();
     
     if(showDebug){
         preview.begin();
-            ofClear(255,0);
-            bool currentShowAllPoints = showAllPoints;
-            showAllPoints = true;
-            drawDots();
-            showAllPoints = currentShowAllPoints;
-            drawDrawing();
+        ofClear(255,0);
+        bool currentShowAllPoints = showAllPoints;
+        showAllPoints = true;
+        drawDots();
+        showAllPoints = currentShowAllPoints;
+        drawDrawing();
         preview.end();
-        }
+    }
     
     if(lines.size() > 0){
-
-        ofSetColor(255,255,255,255);
-
+        
+        ofSetColor(255, 255, 248);
+        noise.draw(0,0);
+        
+        ofSetColor(255,255,255,240);
+        
         ofEnableAlphaBlending();
-
+        
         canvas.draw(0,0);
         drawingCanvas.draw(0,0);
         
         if(showDebug){
-       
+            
             ofSetColor(0, 0, 0);
             stringstream output;
             output << totalPointsHit << "/" << totalPointCount;
             ofDrawBitmapString(output.str(), ofPoint(10,20));
-       
+            
             ofPushMatrix();
-                ofSetColor(255,255,255,255);
-                ofTranslate(0, ofGetHeight() - preview.getHeight()*0.3);
-                ofScale(0.3, 0.3);
-                preview.draw(0,0);
+            ofSetColor(255,255,255,255);
+            ofTranslate(0, ofGetHeight() - preview.getHeight()*0.3);
+            ofScale(0.3, 0.3);
+            preview.draw(0,0);
             ofPopMatrix();
-            }
-        }   
+        }
+    }   
+}
+
+void testApp::setupNoise() {
+	shader.load("noise");
+	shader.begin();
+	const int octaves = 8;
+	const float dropoff = .5;
+	float total = 0;
+	float weights[octaves];
+	float scaling[octaves];
+	for(int i = 0; i < octaves; i++) {
+		weights[i] = 1. / exp2f(dropoff * i);
+		scaling[i] = exp2f(i);
+		total += weights[i];
+	}
+	shader.setUniform2fv("weights", weights, octaves);
+	shader.setUniform2fv("scaling", scaling, octaves);
+	shader.setUniform1f("normalization", 1.f / total);
+	shader.setUniform1i("seed", ofRandom(8, 32));
+	shader.end();
 }
 
 ofPoint testApp::getViewTarget(){
@@ -221,7 +324,7 @@ ofPoint testApp::getNextPoint(){
     }
     
     return result;
-
+    
 }
 
 ofPoint testApp::getCurrentPoint(){
@@ -237,7 +340,7 @@ ofPoint testApp::getCurrentPoint(){
     if(currentPointNum >= lines.at(currentLineNum).getVertices().size()){
         currentPointNum = 0;
         currentLineNum++;
-
+        
     }
     
     return result;
@@ -261,7 +364,6 @@ void testApp::loadData(){
         for(int j = 0; j < numPoints; j++){        
             line.addVertex(ofPoint(xml.getAttribute("Point", "x", 0, j), xml.getAttribute("Point", "y", 0, j)));
             totalPointCount++;
-            cout << totalPointCount << endl;
         }
         
         
@@ -303,12 +405,12 @@ void testApp::keyPressed(int key){
     
     if(key == '='){
         canvasScale += 1;
-       // cout << canvasScale << endl;
+        // cout << canvasScale << endl;
     }
     
     if(key == '-'){
         canvasScale -= 1;
-       // cout << canvasScale << endl;
+        // cout << canvasScale << endl;
     }
     
     if(key == 'p'){
@@ -318,45 +420,45 @@ void testApp::keyPressed(int key){
     if (key == 'd'){
         showDebug = !showDebug;
     }
-
+    
 }
 
 //--------------------------------------------------------------
 void testApp::keyReleased(int key){
-
+    
 }
 
 //--------------------------------------------------------------
 void testApp::mouseMoved(int x, int y ){  
-
+    
 }
 
 //--------------------------------------------------------------
 void testApp::mouseDragged(int x, int y, int button){
-
+    
 }
 
 //--------------------------------------------------------------
 void testApp::mousePressed(int x, int y, int button){
-
+    
 }
 
 //--------------------------------------------------------------
 void testApp::mouseReleased(int x, int y, int button){
-
+    
 }
 
 //--------------------------------------------------------------
 void testApp::windowResized(int w, int h){
-
+    
 }
 
 //--------------------------------------------------------------
 void testApp::gotMessage(ofMessage msg){
-
+    
 }
 
 //--------------------------------------------------------------
 void testApp::dragEvent(ofDragInfo dragInfo){ 
-
+    
 }

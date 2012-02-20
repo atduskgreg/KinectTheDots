@@ -3,23 +3,24 @@
 #include "ofMain.h"
 #include "ofxXmlSettings.h"
 #include "ofxTween.h"
+#include "ofxOpenNI.h"
 
 class testApp : public ofBaseApp{
-
-	public:
-		void setup();
-		void update();
-		void draw();
-
-		void keyPressed  (int key);
-		void keyReleased(int key);
-		void mouseMoved(int x, int y );
-		void mouseDragged(int x, int y, int button);
-		void mousePressed(int x, int y, int button);
-		void mouseReleased(int x, int y, int button);
-		void windowResized(int w, int h);
-		void dragEvent(ofDragInfo dragInfo);
-		void gotMessage(ofMessage msg);
+    
+public:
+    void setup();
+    void update();
+    void draw();
+    
+    void keyPressed  (int key);
+    void keyReleased(int key);
+    void mouseMoved(int x, int y );
+    void mouseDragged(int x, int y, int button);
+    void mousePressed(int x, int y, int button);
+    void mouseReleased(int x, int y, int button);
+    void windowResized(int w, int h);
+    void dragEvent(ofDragInfo dragInfo);
+    void gotMessage(ofMessage msg);
     
     void loadData();
     ofPoint getNextPoint();
@@ -30,6 +31,7 @@ class testApp : public ofBaseApp{
     
     void drawDots();
     void drawDrawing();
+    void setupNoise();
     
     float currentScale();
     
@@ -38,10 +40,23 @@ class testApp : public ofBaseApp{
     int totalPointCount;
     int totalPointsHit;
     
+    ofxOpenNIContext	recordContext, playContext;
+	ofxImageGenerator	recordImage, playImage;
+    
+    ofxDepthGenerator	recordDepth, playDepth;
+	ofxHandGenerator	recordHandTracker, playHandTracker;
+	ofxUserGenerator	recordUser, playUser;
+    
+    //  ofxHandGenerator handTracker;
+    // ofxOpenNIContext	kinect;
+    //ofxDepthGenerator depthGenerator;
+    //  ofxUserGenerator	user;
+    
+    
     ofxTween tween;
     ofxEasingCubic easingcubic;
     
-    ofImage ink;
+    ofImage ink, perlin;
     
     ofPoint convertToDrawingPoint(ofPoint p);
     
@@ -56,7 +71,9 @@ class testApp : public ofBaseApp{
     
     int canvasScale, prevCanvasScale;
     
-    ofFbo canvas, drawingCanvas, preview;
+    ofFbo canvas, drawingCanvas, preview, noise;
+    
+    ofShader shader;
     
     ofPoint currentPoint;
     ofPoint nextPoint;
@@ -67,5 +84,5 @@ class testApp : public ofBaseApp{
     int nextPointNum;
     int nextLineNum;
     
-        
+    
 };
