@@ -35,6 +35,9 @@ public:
     
     float currentScale();
     
+    bool useKinect;
+
+    
     ofPoint previousViewTarget;
     
     int totalPointCount;

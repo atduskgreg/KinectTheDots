@@ -2,6 +2,9 @@
 
 //--------------------------------------------------------------
 void testApp::setup(){
+    
+    useKinect = true;
+    
     totalPointsHit = 0;
     totalPointCount = 0;
     
@@ -76,23 +79,34 @@ void testApp::setup(){
 //--------------------------------------------------------------
 void testApp::update(){
     
-    recordContext.update();
-    recordDepth.update();
-    
-    
-     
-     if ( recordHandTracker.getNumTrackedHands() >0){  
-         ofxTrackedHand * hand = recordHandTracker.getHand(0);
-         if(hand->isBeingTracked){
-             cout << "x: " << hand->projectPos.x << " y: " << hand->projectPos.x << endl;
-         }
-     }
-    
+    if(useKinect){
+        recordContext.update();
+        recordDepth.update();
+    }
     
     if(!tween.isRunning()){
+        ofPoint pointInDrawingSpace;
         
-        ofPoint pointInDrawingSpace = convertToDrawingPoint(ofPoint(mouseX,mouseY));
-        
+        if(useKinect){
+            if ( recordHandTracker.getNumTrackedHands() >0){  
+                ofxTrackedHand * hand = recordHandTracker.getHand(0);
+                if(hand->isBeingTracked){
+                    cout << "x: " << hand->projectPos.x << " y: " << hand->projectPos.y;
+                    //l-r 70,590
+                    //b-t 80,400
+                    ofPoint screenHand;
+                    screenHand.x = ofMap(hand->projectPos.x, 80, 590,  0, ofGetWidth());
+                    screenHand.y = ofMap(hand->projectPos.y, 70, 400, 0, ofGetHeight());
+                    cout << " Tx: " << screenHand.x << " Ty: " << screenHand.y << endl;
+                    
+                    pointInDrawingSpace = convertToDrawingPoint(screenHand);
+                    
+                }
+            }
+            
+        } else {
+            pointInDrawingSpace = convertToDrawingPoint(ofPoint(mouseX,mouseY));
+        }
         // cout << "dist: " << ofDist(pointInDrawingSpace.x, pointInDrawingSpace.y, nextPoint.x, nextPoint.y) << endl;
         
         if(ofDist(pointInDrawingSpace.x, pointInDrawingSpace.y, nextPoint.x, nextPoint.y) <= 0.5 ){
@@ -102,6 +116,7 @@ void testApp::update(){
             drawing.at(0).addVertex(pointInDrawingSpace);
         }
     }
+
     shader.setUniformTexture("tex0", perlin, 0);
     noise.begin();
     shader.begin();
@@ -272,6 +287,13 @@ void testApp::draw(){
             ofTranslate(0, ofGetHeight() - preview.getHeight()*0.3);
             ofScale(0.3, 0.3);
             preview.draw(0,0);
+            ofPopMatrix();
+            
+            ofPushMatrix();
+            ofSetColor(255,255,255,255);
+            ofTranslate(ofGetWidth() - 640*0.3, ofGetHeight() - 480*0.3);
+            ofScale(0.3, 0.3);
+            recordDepth.draw(0,0);
             ofPopMatrix();
         }
     }   
