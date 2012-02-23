@@ -31,11 +31,13 @@ public:
     
     void drawDots();
     void drawDrawing();
-    void setupNoise();
     
     float currentScale();
     
     bool useKinect;
+    
+    bool pointBaseNeedsRefresh;
+    ofPoint pointBase;
 
     
     ofPoint previousViewTarget;

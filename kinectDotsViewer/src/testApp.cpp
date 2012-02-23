@@ -3,7 +3,7 @@
 //--------------------------------------------------------------
 void testApp::setup(){
     
-    useKinect = true;
+    useKinect = false;
     
     totalPointsHit = 0;
     totalPointCount = 0;
@@ -12,6 +12,8 @@ void testApp::setup(){
     showNums = true;
     showAllPoints = true;
     showLines = true;
+    
+    pointBaseNeedsRefresh = false;
     
     currentPointNum = 0;
     currentLineNum = 0;
@@ -31,7 +33,6 @@ void testApp::setup(){
     canvas.allocate(ofGetWidth(), ofGetHeight());
     drawingCanvas.allocate(ofGetWidth(), ofGetHeight());
     preview.allocate(ofGetWidth(), ofGetHeight());
-    noise.allocate(512, 512);
     
     drawing.push_back(ofPolyline());
     
@@ -39,40 +40,29 @@ void testApp::setup(){
     ofClear(255, 0);
     drawingCanvas.end();
     
-    //setupNoise();
+
+    if(useKinect){
     
-    float filterFactor = 0.1f;
+        float filterFactor = 0.1f;
     
-    recordContext.setup();	// all nodes created by code -> NOT using the xml config file at all
-	//recordContext.setupUsingXMLFile();
-	recordDepth.setup(&recordContext);
-	recordImage.setup(&recordContext);
+        recordContext.setup();	// all nodes created by code -> NOT using the xml config file at all
+        //recordContext.setupUsingXMLFile();
+        recordDepth.setup(&recordContext);
+        recordImage.setup(&recordContext);
     
-	recordUser.setup(&recordContext);
-	recordUser.setSmoothing(filterFactor);				// built in openni skeleton smoothing...
-	recordUser.setUseMaskPixels(true);
-	recordUser.setUseCloudPoints(false);
-	recordUser.setMaxNumberOfUsers(2);					// use this to set dynamic max number of users (NB: that a hard upper limit is defined by MAX_NUMBER_USERS in ofxUserGenerator)
+        recordUser.setup(&recordContext);
+        recordUser.setSmoothing(filterFactor);				// built in openni skeleton smoothing...
+        recordUser.setUseMaskPixels(true);
+        recordUser.setUseCloudPoints(false);
+        recordUser.setMaxNumberOfUsers(2);					// use this to set dynamic max number of users (NB: that a hard upper limit is defined by MAX_NUMBER_USERS in ofxUserGenerator)
     
-	recordHandTracker.setup(&recordContext, 4);
-	recordHandTracker.setSmoothing(filterFactor);		// built in openni hand track smoothing...
-	recordHandTracker.setFilterFactors(filterFactor);	// custom smoothing/filtering (can also set per hand with setFilterFactor)...set them all to 0.1f to begin with
+        recordHandTracker.setup(&recordContext, 4);
+        recordHandTracker.setSmoothing(filterFactor);		// built in openni hand track smoothing...
+        recordHandTracker.setFilterFactors(filterFactor);	// custom smoothing/filtering (can also set per hand with setFilterFactor)...set them all to 0.1f to begin with
     
-	recordContext.toggleRegisterViewport();
-	recordContext.toggleMirror();
-    
-    /*
-     kinect.setup();
-     depthGenerator.setup(&kinect);
-     
-     user.setup(&kinect);
-     user.setMaxNumberOfUsers(1);
-     handTracker.setup(&kinect, 4);
-     handTracker.setSmoothing(filterFactor);		// built in openni hand track smoothing...
-     //handTracker.setFilterFactors(filterFactor);
-     kinect.toggleRegisterViewport();
-     kinect.toggleMirror();
-     */
+        recordContext.toggleRegisterViewport();
+        recordContext.toggleMirror();
+    }
 }
 
 
@@ -107,7 +97,15 @@ void testApp::update(){
         } else {
             pointInDrawingSpace = convertToDrawingPoint(ofPoint(mouseX,mouseY));
         }
-        // cout << "dist: " << ofDist(pointInDrawingSpace.x, pointInDrawingSpace.y, nextPoint.x, nextPoint.y) << endl;
+        
+        if(pointBaseNeedsRefresh){
+            pointBase = pointInDrawingSpace;
+            pointBaseNeedsRefresh = false;
+        }
+        
+        pointInDrawingSpace.x = currentPoint.x + (pointInDrawingSpace.x - pointBase.x);
+        pointInDrawingSpace.y = currentPoint.y + (pointInDrawingSpace.y - pointBase.y);
+
         
         if(ofDist(pointInDrawingSpace.x, pointInDrawingSpace.y, nextPoint.x, nextPoint.y) <= 0.5 ){
             keyPressed(' ');
@@ -115,45 +113,13 @@ void testApp::update(){
             
             drawing.at(0).addVertex(pointInDrawingSpace);
         }
+    } else {
+        pointBaseNeedsRefresh = true;
     }
-
-    shader.setUniformTexture("tex0", perlin, 0);
-    noise.begin();
-    shader.begin();
-    
-    
-    //transformView();
-    //perlin.draw(0,0);
-    /* shader.begin();
-     
-     ofMesh mesh;
-     mesh.setMode(OF_PRIMITIVE_TRIANGLE_FAN);
-     
-     float n = 32 * ofDist(mouseX, mouseY, ofGetWidth() / 2, ofGetHeight() / 2) / ofGetWidth();
-     
-     mesh.addVertex(ofVec2f(-n,-n));
-     mesh.addTexCoord(ofVec2f(0,0));
-     
-     mesh.addVertex(ofVec2f(-n,n));
-     mesh.addTexCoord(ofVec2f(0,ofGetHeight()));
-     
-     mesh.addVertex(ofVec2f(n, -n));
-     mesh.addTexCoord(ofVec2f(ofGetWidth(),0));
-     
-     mesh.addVertex(ofVec2f(n,n));    
-     mesh.addTexCoord(ofVec2f(ofGetWidth(), ofGetHeight()));
-     
-     mesh.draw();
-     
-     shader.end();*/
-    
-    noise.end();
     
 }
 
-void testApp::transformView(){
-    ofPoint viewTarget = getViewTarget();
-    
+void testApp::transformView(){    
     ofTranslate(-1 * (tween.update() * tween.getTarget(2)) + ofGetWidth()/2, -1 * (tween.getTarget(1) * tween.getTarget(2)) + ofGetHeight()/2);
     ofScale(tween.getTarget(2), tween.getTarget(2));
     
@@ -161,7 +127,25 @@ void testApp::transformView(){
 
 float testApp::currentScale(){
     float d = ofDist(currentPoint.x, currentPoint.y, nextPoint.x, nextPoint.y);
-    float m = ofMap(d, 6, 38, 65, 5 ,true);
+    
+    float dw = abs(currentPoint.x - nextPoint.x) + 10;
+    float dh = abs(currentPoint.y - nextPoint.y) + 10;
+
+    float m;
+    
+    if(dw > dh){
+        m = ofGetWidth()/dw;
+        cout << "wider. scale: " << m << endl;
+
+    } else {
+        m = ofGetHeight()/dh;
+        cout << "taller. scale: " << m << endl;
+
+    }
+    
+   // float m = ofMap(d, 6, 38, 65, 5 ,true);
+    
+
     
     return m;
 }
@@ -170,7 +154,10 @@ void testApp::animateView(){
     totalPointsHit++;
     unsigned duration= 1000;
     unsigned delay = 0;
+    
     ofPoint nextViewTarget = getViewTarget();
+    
+    
     tween.setParameters(easingcubic,ofxTween::easeInOut,previousViewTarget.x,nextViewTarget.x,duration,delay); // viewTarget.x
     tween.addValue(previousViewTarget.y, nextViewTarget.y); // viewTarget.y
     tween.addValue(prevCanvasScale, currentScale()); // canvasScale
@@ -204,27 +191,6 @@ void testApp::drawDots(){
 }
 
 void testApp::drawDrawing(){
-    /*if(lines.size() > 0 && drawing.at(0).getVertices().size() > 2){
-     
-     ofPushStyle();
-     ofPushMatrix();
-     ofEnableAlphaBlending();
-     vector<ofPoint> lastLinePoints = drawing.at(drawing.size() - 1).getResampledBySpacing(0.7).getVertices();
-     ofPoint lastPoint = lastLinePoints.at(lastLinePoints.size() - 1);
-     
-     cout << "x: " << lastPoint.x << " y: " << lastPoint.y << endl;
-     float size = ofRandom(0.1, 1.0);
-     float xOffset = ofRandom(0.1, 1.0);
-     float yOffset = ofRandom(0.1,1.0);
-     
-     float alpha = ofRandom(50,255);
-     ofSetColor(0, alpha);
-     
-     ofTranslate(lastPoint.x - size/2, lastPoint.y - size/2);
-     ink.draw(-xOffset,-yOffset, size, size);
-     ofPopMatrix();
-     ofPopStyle();
-     }*/
     ofSetColor(0, 0, 255);
     ofSetLineWidth(2);
     
@@ -264,10 +230,7 @@ void testApp::draw(){
     }
     
     if(lines.size() > 0){
-        
-        ofSetColor(255, 255, 248);
-        noise.draw(0,0);
-        
+                
         ofSetColor(255,255,255,240);
         
         ofEnableAlphaBlending();
@@ -299,25 +262,6 @@ void testApp::draw(){
     }   
 }
 
-void testApp::setupNoise() {
-	shader.load("noise");
-	shader.begin();
-	const int octaves = 8;
-	const float dropoff = .5;
-	float total = 0;
-	float weights[octaves];
-	float scaling[octaves];
-	for(int i = 0; i < octaves; i++) {
-		weights[i] = 1. / exp2f(dropoff * i);
-		scaling[i] = exp2f(i);
-		total += weights[i];
-	}
-	shader.setUniform2fv("weights", weights, octaves);
-	shader.setUniform2fv("scaling", scaling, octaves);
-	shader.setUniform1f("normalization", 1.f / total);
-	shader.setUniform1i("seed", ofRandom(8, 32));
-	shader.end();
-}
 
 ofPoint testApp::getViewTarget(){
     
