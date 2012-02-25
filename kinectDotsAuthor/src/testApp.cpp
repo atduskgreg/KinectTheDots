@@ -2,6 +2,8 @@
 
 //--------------------------------------------------------------
 void testApp::setup(){
+    imageLoaded = false;
+
     loadNewImage();
     showImage =  true;
     showNums = true;
@@ -17,6 +19,7 @@ void testApp::update(){
 
 //--------------------------------------------------------------
 void testApp::draw(){
+    if(imageLoaded){
     if(showImage){
         sourceImage.draw(0,0);
     }
@@ -33,6 +36,7 @@ void testApp::draw(){
                 ofDrawBitmapString(ofToString(i), points.at(i));
             }
         }
+    }
     }
 }
 
@@ -76,7 +80,9 @@ void testApp::saveData(){
 void testApp::loadNewImage(){
     ofFileDialogResult result = ofSystemLoadDialog("Please select an image");
     currentFilename = result.filePath;
+    cout << currentFilename << endl;
     sourceImage.loadImage(currentFilename);
+    imageLoaded = true;
 }
 
 //--------------------------------------------------------------

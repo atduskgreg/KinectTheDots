@@ -4,6 +4,7 @@
 #include "ofxXmlSettings.h"
 #include "ofxTween.h"
 #include "ofxOpenNI.h"
+#include "inkParticleSystem.h"
 
 class testApp : public ofBaseApp{
     
@@ -36,9 +37,14 @@ public:
     
     bool useKinect;
     
+    bool skipToNextLine;
+    
+    int prevLineNum;
+    
     bool pointBaseNeedsRefresh;
     ofPoint pointBase;
 
+    int currentDrawingSegment;
     
     ofPoint previousViewTarget;
     
@@ -61,13 +67,16 @@ public:
     ofxTween tween;
     ofxEasingCubic easingcubic;
     
-    ofImage ink, perlin;
+    ofImage ink;
     
     ofPoint convertToDrawingPoint(ofPoint p);
     
     vector<ofPolyline> lines;
     
     vector<ofPolyline> drawing;
+    
+    inkParticleSystem particleSystem;
+
     
     bool showNums;
     bool showLines;

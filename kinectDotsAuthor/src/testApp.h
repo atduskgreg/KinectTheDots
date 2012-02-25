@@ -24,6 +24,8 @@ class testApp : public ofBaseApp{
     void loadNewImage();
     void saveData();
     
+    bool imageLoaded;
+    
     string currentFilename;
 
     ofImage sourceImage;

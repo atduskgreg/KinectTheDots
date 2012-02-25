@@ -9,9 +9,11 @@ void testApp::setup(){
     totalPointCount = 0;
     
     loadData();
-    showNums = true;
-    showAllPoints = true;
-    showLines = true;
+    showNums = false;
+    showAllPoints = false;
+    showLines = false;
+    
+    prevLineNum  = 0;
     
     pointBaseNeedsRefresh = false;
     
@@ -21,14 +23,14 @@ void testApp::setup(){
     nextPointNum = 1;
     nextLineNum = 0;
     
-    ink.loadImage("ink2.png");
-    perlin.loadImage("perlin1.png");
-    
+    particleSystem = inkParticleSystem();
+    ink.loadImage("images/ink.png");
+    particleSystem.addParticles(100);    
     
     currentPoint =   getCurrentPoint();
     nextPoint = getNextPoint();
-    
-    canvasScale = 3 ;
+
+    currentDrawingSegment = 0;
     
     canvas.allocate(ofGetWidth(), ofGetHeight());
     drawingCanvas.allocate(ofGetWidth(), ofGetHeight());
@@ -63,6 +65,8 @@ void testApp::setup(){
         recordContext.toggleRegisterViewport();
         recordContext.toggleMirror();
     }
+    
+       animateView();
 }
 
 
@@ -85,8 +89,8 @@ void testApp::update(){
                     //l-r 70,590
                     //b-t 80,400
                     ofPoint screenHand;
-                    screenHand.x = ofMap(hand->projectPos.x, 80, 590,  0, ofGetWidth());
-                    screenHand.y = ofMap(hand->projectPos.y, 70, 400, 0, ofGetHeight());
+                    screenHand.x = ofMap(hand->projectPos.x, 80, 590,  0, ofGetWidth()*2);
+                    screenHand.y = ofMap(hand->projectPos.y, 70, 400, 0, ofGetHeight()*2);
                     cout << " Tx: " << screenHand.x << " Ty: " << screenHand.y << endl;
                     
                     pointInDrawingSpace = convertToDrawingPoint(screenHand);
@@ -95,7 +99,9 @@ void testApp::update(){
             }
             
         } else {
-            pointInDrawingSpace = convertToDrawingPoint(ofPoint(mouseX,mouseY));
+            
+            
+            pointInDrawingSpace = convertToDrawingPoint(ofPoint(mouseX*2,mouseY*2));
         }
         
         if(pointBaseNeedsRefresh){
@@ -111,7 +117,13 @@ void testApp::update(){
             keyPressed(' ');
         } else {
             
-            drawing.at(0).addVertex(pointInDrawingSpace);
+            particleSystem.setTarget(ofPoint(pointInDrawingSpace.x, pointInDrawingSpace.y));
+            particleSystem.update();
+            
+            
+           // cout << "cds: " << currentDrawingSegment << " currentPointNum: " <<  currentPointNum << " nextPointNum: " << nextPointNum << endl;
+            
+            drawing.at(currentDrawingSegment).curveTo(pointInDrawingSpace);
         }
     } else {
         pointBaseNeedsRefresh = true;
@@ -128,23 +140,19 @@ void testApp::transformView(){
 float testApp::currentScale(){
     float d = ofDist(currentPoint.x, currentPoint.y, nextPoint.x, nextPoint.y);
     
-    float dw = abs(currentPoint.x - nextPoint.x) + 10;
-    float dh = abs(currentPoint.y - nextPoint.y) + 10;
+    float dw = abs(currentPoint.x - nextPoint.x) + 25;
+    float dh = abs(currentPoint.y - nextPoint.y) + 25;
 
     float m;
     
     if(dw > dh){
         m = ofGetWidth()/dw;
-        cout << "wider. scale: " << m << endl;
 
     } else {
         m = ofGetHeight()/dh;
-        cout << "taller. scale: " << m << endl;
 
     }
-    
-   // float m = ofMap(d, 6, 38, 65, 5 ,true);
-    
+        
 
     
     return m;
@@ -191,6 +199,24 @@ void testApp::drawDots(){
 }
 
 void testApp::drawDrawing(){
+    //particleSystem.draw();
+    /*for ( list<inkParticle>::iterator p = particleSystem.particles.begin(); p != particleSystem.particles.end(); ++p) {
+        
+        float spread = ofMap(p->vel.length(), 0, 20, 3, 0);
+        
+        ofPushStyle();
+        ofEnableAlphaBlending();
+        ofSetColor(0, p->color.a + spread*2);
+        
+        ofPushMatrix();
+        ofTranslate(-(p->radius + spread/2), -(p->radius + spread/2));
+        ink.draw(p->loc.x, p->loc.y, (p->radius + spread), (p->radius + spread));
+        ofPopMatrix();
+        
+        ofPopStyle();
+        
+    }*/
+
     ofSetColor(0, 0, 255);
     ofSetLineWidth(2);
     
@@ -199,6 +225,7 @@ void testApp::drawDrawing(){
         drawing.at(i).draw();
         
     }
+    
 }
 
 
@@ -215,6 +242,7 @@ void testApp::draw(){
     drawingCanvas.begin();
     ofClear(255,0);
     transformView();
+   // ofScale(3, 3);
     drawDrawing();
     drawingCanvas.end();
     
@@ -236,7 +264,12 @@ void testApp::draw(){
         ofEnableAlphaBlending();
         
         canvas.draw(0,0);
-        drawingCanvas.draw(0,0);
+        ofPushMatrix();
+        //ofScale(0.33, 0.33);
+       // transformView();
+
+        drawingCanvas.draw(0,0);//, ofGetWidth()*3, ofGetHeight()*3);
+        ofPopMatrix();
         
         if(showDebug){
             
@@ -283,10 +316,10 @@ ofPoint testApp::getNextPoint(){
     
     nextPointNum++;
     
-    if(nextPointNum >= lines.at(nextLineNum).getVertices().size()){
-        nextPointNum = 0;
+    
+    if(nextPointNum == lines.at(nextLineNum).getVertices().size()){
+        nextPointNum = 1;
         nextLineNum++;
-        
     }
     
     return result;
@@ -303,10 +336,16 @@ ofPoint testApp::getCurrentPoint(){
     
     currentPointNum++;
     
-    if(currentPointNum >= lines.at(currentLineNum).getVertices().size()){
+    //cout << "cpn: " << currentPointNum << " current line size: " << lines.at(currentLineNum).getVertices().size() << endl;
+
+
+    if(currentPointNum >= lines.at(currentLineNum).getVertices().size() - 1){
+
+        
         currentPointNum = 0;
         currentLineNum++;
-        
+
+
     }
     
     return result;
@@ -364,8 +403,30 @@ void testApp::keyPressed(int key){
         prevCanvasScale = currentScale();
         previousViewTarget = getViewTarget(); // store it before it changes for tweening
         
+        
+
         currentPoint = getCurrentPoint();
         nextPoint = getNextPoint();
+        
+        cout << "current: " << currentPointNum << "/" << lines.at(currentLineNum).getVertices().size() - 1 << endl;
+        
+        
+        if( currentPointNum == 1){
+            cout << "making a new line" << endl;
+            
+            ofPolyline l = ofPolyline();
+            l.addVertex(lines.at(currentLineNum)[0]);
+            drawing.push_back(l);
+            currentDrawingSegment++;
+            
+        }
+        
+ 
+
+   
+
+        
+        
         animateView();
     }
     
