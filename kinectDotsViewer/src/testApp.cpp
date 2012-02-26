@@ -20,6 +20,8 @@ void testApp::setup(){
     currentPointNum = 0;
     currentLineNum = 0;
     
+    timeStopped = false;
+    
     nextPointNum = 1;
     nextLineNum = 0;
     
@@ -32,9 +34,11 @@ void testApp::setup(){
 
     currentDrawingSegment = 0;
     
-    canvas.allocate(ofGetWidth(), ofGetHeight());
-    drawingCanvas.allocate(ofGetWidth(), ofGetHeight());
-    preview.allocate(ofGetWidth(), ofGetHeight());
+    canvasWidth = 1024;
+    
+    canvas.allocate(canvasWidth, ofGetHeight());
+    drawingCanvas.allocate(canvasWidth, ofGetHeight());
+    preview.allocate(canvasWidth, ofGetHeight());
     
     drawing.push_back(ofPolyline());
     
@@ -89,8 +93,8 @@ void testApp::update(){
                     //l-r 70,590
                     //b-t 80,400
                     ofPoint screenHand;
-                    screenHand.x = ofMap(hand->projectPos.x, 80, 590,  0, ofGetWidth()*2);
-                    screenHand.y = ofMap(hand->projectPos.y, 70, 400, 0, ofGetHeight()*2);
+                    screenHand.x = ofMap(hand->projectPos.x, 80, 590,  0, canvasWidth*2);
+                    screenHand.y = ofMap(hand->projectPos.y, 70, 400, 0, canvasWidth*2);
                     cout << " Tx: " << screenHand.x << " Ty: " << screenHand.y << endl;
                     
                     pointInDrawingSpace = convertToDrawingPoint(screenHand);
@@ -132,7 +136,7 @@ void testApp::update(){
 }
 
 void testApp::transformView(){    
-    ofTranslate(-1 * (tween.update() * tween.getTarget(2)) + ofGetWidth()/2, -1 * (tween.getTarget(1) * tween.getTarget(2)) + ofGetHeight()/2);
+    ofTranslate(-1 * (tween.update() * tween.getTarget(2)) + canvasWidth/2, -1 * (tween.getTarget(1) * tween.getTarget(2)) + ofGetHeight()/2);
     ofScale(tween.getTarget(2), tween.getTarget(2));
     
 }
@@ -146,7 +150,7 @@ float testApp::currentScale(){
     float m;
     
     if(dw > dh){
-        m = ofGetWidth()/dw;
+        m = canvasWidth/dw;
 
     } else {
         m = ofGetHeight()/dh;
@@ -156,6 +160,18 @@ float testApp::currentScale(){
 
     
     return m;
+}
+
+void testApp::fullReveal(){
+    ofPoint viewCenter = ofPoint(canvasWidth/2, ofGetHeight()/2);
+    
+    unsigned duration= 1000;
+    unsigned delay = 0;
+    
+    tween.setParameters(easingcubic,ofxTween::easeInOut,previousViewTarget.x,viewCenter.x,duration,delay); // viewTarget.x
+    tween.addValue(previousViewTarget.y, viewCenter.y); // viewTarget.y
+    tween.addValue(prevCanvasScale, 1); // canvasScale
+    tween.start();
 }
 
 void testApp::animateView(){
@@ -189,12 +205,16 @@ void testApp::drawDots(){
             }
         } else {
             ofCircle(nextPoint.x, nextPoint.y, 1);
+            ofDrawBitmapString(ofToString(totalPointsHit+1), nextPoint);
+
         }
     }
     
     ofPushStyle();
     ofSetColor(255,0,0);
     ofCircle(currentPoint.x, currentPoint.y, 1);
+    ofDrawBitmapString(ofToString(totalPointsHit), currentPoint);
+
     ofPopStyle();
 }
 
@@ -259,8 +279,10 @@ void testApp::draw(){
     
     if(lines.size() > 0){
                 
+        ofPushMatrix();
+        ofTranslate(256, 0);
         ofSetColor(255,255,255,240);
-        
+
         ofEnableAlphaBlending();
         
         canvas.draw(0,0);
@@ -287,11 +309,49 @@ void testApp::draw(){
             
             ofPushMatrix();
             ofSetColor(255,255,255,255);
-            ofTranslate(ofGetWidth() - 640*0.3, ofGetHeight() - 480*0.3);
+            ofTranslate(canvasWidth - 640*0.3, ofGetHeight() - 480*0.3);
             ofScale(0.3, 0.3);
             recordDepth.draw(0,0);
             ofPopMatrix();
         }
+        ofPopMatrix();
+    
+        // sidebar ----------------
+        ofPushStyle();
+        ofSetColor(0);
+        ofFill();
+        ofRect(0,0, 256,ofGetHeight());
+        
+        ofSetColor(0, 255, 0);
+        ofScale(3,3);
+        ofDrawBitmapString("Kinect\n  the\n Dots!", 15, 15);
+        ofDrawBitmapString("DOTS LEFT", 5, 70);
+        ofDrawBitmapString(ofToString(totalPointCount - totalPointsHit), 30, 90);
+        ofDrawBitmapString("Time", 20, 110);
+        
+        int millis = ofGetElapsedTimeMillis();
+        int seconds = int(millis / 1000.0);
+        int mins = int(seconds / 60.0);
+        
+        stringstream t;
+        t << mins << ":" << seconds - (60 * mins);
+        
+        if(totalPointsHit == totalPointCount){
+            if(!timeStopped){
+                finalTime = t.str();
+                timeStopped = true;
+            }
+            
+            ofDrawBitmapString(finalTime, 30,130);
+
+        } else {
+            
+            ofDrawBitmapString(t.str(), 30,130);
+
+        }
+        
+        ofPopStyle();
+        
     }   
 }
 
@@ -381,8 +441,8 @@ void testApp::loadData(){
 ofPoint testApp::convertToDrawingPoint(ofPoint p){
     ofPoint result = ofPoint(p.x, p.y);
     
-    result.x = (p.x + getViewTarget().x * currentScale() - ofGetWidth()/2) / currentScale();
-    result.y = (p.y + getViewTarget().y * currentScale() - ofGetHeight()/2) / currentScale();
+    result.x = (p.x + getViewTarget().x * currentScale() - canvasWidth/2) / currentScale();
+    result.y = (p.y + getViewTarget().y * currentScale() - canvasWidth/2) / currentScale();
     
     return result;
     
@@ -408,11 +468,10 @@ void testApp::keyPressed(int key){
         currentPoint = getCurrentPoint();
         nextPoint = getNextPoint();
         
-        cout << "current: " << currentPointNum << "/" << lines.at(currentLineNum).getVertices().size() - 1 << endl;
+      //  cout << "current: " << currentPointNum << "/" << lines.at(currentLineNum).getVertices().size() - 1 << endl;
         
         
         if( currentPointNum == 1){
-            cout << "making a new line" << endl;
             
             ofPolyline l = ofPolyline();
             l.addVertex(lines.at(currentLineNum)[0]);
@@ -421,13 +480,13 @@ void testApp::keyPressed(int key){
             
         }
         
- 
-
-   
-
         
+        if(totalPointsHit == totalPointCount){
+            fullReveal();
+        } else {
         
-        animateView();
+            animateView();
+        }
     }
     
     if(key == '='){
@@ -448,6 +507,9 @@ void testApp::keyPressed(int key){
         showDebug = !showDebug;
     }
     
+    if(key == 'r'){
+        fullReveal();
+    }
 }
 
 //--------------------------------------------------------------

@@ -33,7 +33,12 @@ public:
     void drawDots();
     void drawDrawing();
     
+    void fullReveal();
+    
     float currentScale();
+    
+    string finalTime;
+    bool timeStopped;
     
     bool useKinect;
     
@@ -44,6 +49,8 @@ public:
     bool pointBaseNeedsRefresh;
     ofPoint pointBase;
 
+    float canvasWidth;
+    
     int currentDrawingSegment;
     
     ofPoint previousViewTarget;
