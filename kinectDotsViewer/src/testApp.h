@@ -40,6 +40,10 @@ public:
     string finalTime;
     bool timeStopped;
     
+    string currentHint;
+    
+    bool victory;
+    
     bool useKinect;
     
     bool skipToNextLine;
@@ -73,6 +77,8 @@ public:
     
     ofxTween tween;
     ofxEasingCubic easingcubic;
+    
+    ofImage currentDrawingImage;
     
     ofImage ink;
     

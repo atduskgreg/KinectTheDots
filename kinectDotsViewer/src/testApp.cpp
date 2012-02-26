@@ -12,10 +12,13 @@ void testApp::setup(){
     showNums = false;
     showAllPoints = false;
     showLines = false;
-    
+    showDebug = false;
+
     prevLineNum  = 0;
     
     pointBaseNeedsRefresh = false;
+    
+    victory = false;
     
     currentPointNum = 0;
     currentLineNum = 0;
@@ -25,9 +28,9 @@ void testApp::setup(){
     nextPointNum = 1;
     nextLineNum = 0;
     
-    particleSystem = inkParticleSystem();
-    ink.loadImage("images/ink.png");
-    particleSystem.addParticles(100);    
+   // particleSystem = inkParticleSystem();
+   // ink.loadImage("images/ink.png");
+   // particleSystem.addParticles(100);    
     
     currentPoint =   getCurrentPoint();
     nextPoint = getNextPoint();
@@ -121,8 +124,8 @@ void testApp::update(){
             keyPressed(' ');
         } else {
             
-            particleSystem.setTarget(ofPoint(pointInDrawingSpace.x, pointInDrawingSpace.y));
-            particleSystem.update();
+            //particleSystem.setTarget(ofPoint(pointInDrawingSpace.x, pointInDrawingSpace.y));
+            //particleSystem.update();
             
             
            // cout << "cds: " << currentDrawingSegment << " currentPointNum: " <<  currentPointNum << " nextPointNum: " << nextPointNum << endl;
@@ -168,10 +171,15 @@ void testApp::fullReveal(){
     unsigned duration= 1000;
     unsigned delay = 0;
     
+    showAllPoints = true;
+    showNums = true;
+    
     tween.setParameters(easingcubic,ofxTween::easeInOut,previousViewTarget.x,viewCenter.x,duration,delay); // viewTarget.x
     tween.addValue(previousViewTarget.y, viewCenter.y); // viewTarget.y
     tween.addValue(prevCanvasScale, 1); // canvasScale
     tween.start();
+    
+    victory = true;
 }
 
 void testApp::animateView(){
@@ -318,16 +326,22 @@ void testApp::draw(){
     
         // sidebar ----------------
         ofPushStyle();
-        ofSetColor(0);
-        ofFill();
-        ofRect(0,0, 256,ofGetHeight());
+            ofSetColor(0);
+            ofFill();
+            ofRect(0,0, 256,ofGetHeight());
         
-        ofSetColor(0, 255, 0);
-        ofScale(3,3);
-        ofDrawBitmapString("Kinect\n  the\n Dots!", 15, 15);
-        ofDrawBitmapString("DOTS LEFT", 5, 70);
-        ofDrawBitmapString(ofToString(totalPointCount - totalPointsHit), 30, 90);
-        ofDrawBitmapString("Time", 20, 110);
+            ofSetColor(0, 255, 0);
+            ofPushMatrix();
+                ofScale(3,3);
+                ofDrawBitmapString("Kinect\nthe\nDots!", 8, 15);
+            ofPopMatrix();
+        
+            ofPushMatrix();
+                ofScale(2, 2);
+                ofDrawBitmapString("DOTS LEFT", 11, 110);
+                ofDrawBitmapString(ofToString(totalPointCount - totalPointsHit), 11, 130);
+                ofDrawBitmapString("Time", 11, 160);
+            ofPopMatrix();
         
         int millis = ofGetElapsedTimeMillis();
         int seconds = int(millis / 1000.0);
@@ -336,19 +350,44 @@ void testApp::draw(){
         stringstream t;
         t << mins << ":" << seconds - (60 * mins);
         
-        if(totalPointsHit == totalPointCount){
+        if(victory){
             if(!timeStopped){
                 finalTime = t.str();
                 timeStopped = true;
             }
             
-            ofDrawBitmapString(finalTime, 30,130);
+            ofPushMatrix();
+            ofPushStyle();
+                ofSetColor(255);
+                ofScale(3, 3);
+                float proportion = (float)currentDrawingImage.height / currentDrawingImage.width;
+                currentDrawingImage.draw(1, (ofGetHeight() - 250)/3, 245/3, (245 * proportion)/3);
+            ofPopStyle();
+            ofPopMatrix();
+            
+            ofPushMatrix();
+                ofScale(2, 2);
+           
+                ofDrawBitmapString(finalTime, 11,180);
+            ofPopMatrix();
 
         } else {
-            
-            ofDrawBitmapString(t.str(), 30,130);
+            ofPushMatrix();
+                ofScale(2, 2);
+                ofDrawBitmapString(t.str(), 11,180);
+            ofPopMatrix();
 
         }
+        
+        
+            ofPushMatrix();
+                ofScale(2, 2);
+                ofDrawBitmapString("Hint:", 11, 210);
+        
+                stringstream h;
+                h << "'" << currentHint << "'";
+                ofDrawBitmapString(h.str(), 11, 230);
+            ofPopMatrix();
         
         ofPopStyle();
         
@@ -418,6 +457,12 @@ void testApp::loadData(){
     xml.loadFile(result.filePath);
     
     xml.pushTag("Lines");
+    
+    string currentImageFilename = xml.getAttribute("Image", "filename", "");
+    currentDrawingImage.loadImage(currentImageFilename);
+    
+    currentHint = xml.getAttribute("Image", "hint", "");
+
     
     int numLines = xml.getNumTags("Line");
     for(int i = 0; i < numLines; i++){
