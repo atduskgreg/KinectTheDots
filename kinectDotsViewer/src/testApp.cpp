@@ -3,9 +3,9 @@
 //--------------------------------------------------------------
 void testApp::setup(){
     
-    useKinect = false;
+    useKinect = true;
     
-
+    promptForHand = false;
     currentXml = 0;
     
     canvasWidth = 1024;
@@ -20,13 +20,13 @@ void testApp::setup(){
     showLines = false;
     showDebug = false;
 
-        
+
    // particleSystem = inkParticleSystem();
    // ink.loadImage("images/ink.png");
    // particleSystem.addParticles(100);    
     
         
-
+    handWarning.loadImage("images/raise_hand.jpg");
 
     
 
@@ -69,25 +69,40 @@ void testApp::update(){
         ofPoint pointInDrawingSpace;
         
         if(useKinect){
+            prevPromptForHand = promptForHand;
+            promptForHand = true;
+            cout << "num tracked hands: " << recordHandTracker.getNumTrackedHands() << endl;
+            
             if ( recordHandTracker.getNumTrackedHands() >0){  
-                ofxTrackedHand * hand = recordHandTracker.getHand(0);
-                if(hand->isBeingTracked){
-                    cout << "x: " << hand->projectPos.x << " y: " << hand->projectPos.y;
-                    //l-r 70,590
-                    //b-t 80,400
-                    ofPoint screenHand;
-                    screenHand.x = ofMap(hand->projectPos.x, 80, 590,  0, canvasWidth*2);
-                    screenHand.y = ofMap(hand->projectPos.y, 70, 400, 0, canvasWidth*2);
-                    cout << " Tx: " << screenHand.x << " Ty: " << screenHand.y << endl;
-                    
-                    pointInDrawingSpace = convertToDrawingPoint(screenHand);
+                for(int i = 0; i < recordHandTracker.tracked_hands.size(); i++){
+                    ofxTrackedHand * hand = recordHandTracker.getHand(i);
+                    if(hand->isBeingTracked){
+                        cout << "tracking hand: " << i << endl;
+                        cout << "x: " << hand->projectPos.x << " y: " << hand->projectPos.y;
+                        //l-r 70,590
+                        //b-t 80,400
+                        ofPoint screenHand;
+                        screenHand.x = ofMap(hand->projectPos.x, 80, 590,  0, canvasWidth*2);
+                        screenHand.y = ofMap(hand->projectPos.y, 70, 400, 0, canvasWidth*2);
+                        cout << " Tx: " << screenHand.x << " Ty: " << screenHand.y << endl;
+                        
+                        pointInDrawingSpace = convertToDrawingPoint(screenHand);
+                        
+                        promptForHand = false;
+                    } 
+
                     
                 }
+                
+                
+            }              
+        
+        
+            if(prevPromptForHand && !promptForHand){
+                pointBaseNeedsRefresh = true;
             }
-            
+        
         } else {
-            
-            
             pointInDrawingSpace = convertToDrawingPoint(ofPoint(mouseX*2,mouseY*2));
         }
         
@@ -100,7 +115,7 @@ void testApp::update(){
         pointInDrawingSpace.y = currentPoint.y + (pointInDrawingSpace.y - pointBase.y);
 
         
-        if(ofDist(pointInDrawingSpace.x, pointInDrawingSpace.y, nextPoint.x, nextPoint.y) <= 0.5 ){
+        if(ofDist(pointInDrawingSpace.x, pointInDrawingSpace.y, nextPoint.x, nextPoint.y) <= 0.8 ){
             keyPressed(' ');
         } else {
             
@@ -280,6 +295,21 @@ void testApp::draw(){
 
         drawingCanvas.draw(0,0);//, ofGetWidth()*3, ofGetHeight()*3);
         ofPopMatrix();
+        
+        if(promptForHand){
+            handWarning.draw(canvasWidth/2 - handWarning.width/2, ofGetHeight()/2 - handWarning.height/2);
+        
+        }
+        
+        if(promptForHand){
+            ofPushMatrix();
+            ofSetColor(255,255,255,255);
+            ofTranslate(canvasWidth - 640*0.3, ofGetHeight() - 480*0.3);
+            ofScale(0.3, 0.3);
+            recordDepth.draw(0,0);
+            ofPopMatrix();
+        }
+        
         
         if(showDebug){
             

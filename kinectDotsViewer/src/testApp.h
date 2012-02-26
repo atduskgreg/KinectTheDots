@@ -84,6 +84,8 @@ public:
     
     ofImage currentDrawingImage;
     
+    ofImage handWarning;
+    
     ofImage ink;
     
     ofPoint convertToDrawingPoint(ofPoint p);
@@ -94,6 +96,9 @@ public:
     
     inkParticleSystem particleSystem;
 
+    
+    bool promptForHand;
+    bool prevPromptForHand;
     
     bool showNums;
     bool showLines;
