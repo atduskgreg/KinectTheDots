@@ -48,10 +48,14 @@ public:
     
     bool skipToNextLine;
     
+    int currentXml;
+    
     int prevLineNum;
     
     bool pointBaseNeedsRefresh;
     ofPoint pointBase;
+    
+    ofDirectory xmlDir;
 
     float canvasWidth;
     

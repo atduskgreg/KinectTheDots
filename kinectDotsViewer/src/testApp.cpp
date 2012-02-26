@@ -5,37 +5,8 @@ void testApp::setup(){
     
     useKinect = false;
     
-    totalPointsHit = 0;
-    totalPointCount = 0;
-    
-    loadData();
-    showNums = false;
-    showAllPoints = false;
-    showLines = false;
-    showDebug = false;
 
-    prevLineNum  = 0;
-    
-    pointBaseNeedsRefresh = false;
-    
-    victory = false;
-    
-    currentPointNum = 0;
-    currentLineNum = 0;
-    
-    timeStopped = false;
-    
-    nextPointNum = 1;
-    nextLineNum = 0;
-    
-   // particleSystem = inkParticleSystem();
-   // ink.loadImage("images/ink.png");
-   // particleSystem.addParticles(100);    
-    
-    currentPoint =   getCurrentPoint();
-    nextPoint = getNextPoint();
-
-    currentDrawingSegment = 0;
+    currentXml = 0;
     
     canvasWidth = 1024;
     
@@ -43,11 +14,20 @@ void testApp::setup(){
     drawingCanvas.allocate(canvasWidth, ofGetHeight());
     preview.allocate(canvasWidth, ofGetHeight());
     
-    drawing.push_back(ofPolyline());
+    loadData();
+    showNums = false;
+    showAllPoints = false;
+    showLines = false;
+    showDebug = false;
+
+        
+   // particleSystem = inkParticleSystem();
+   // ink.loadImage("images/ink.png");
+   // particleSystem.addParticles(100);    
     
-    drawingCanvas.begin();
-    ofClear(255, 0);
-    drawingCanvas.end();
+        
+
+
     
 
     if(useKinect){
@@ -73,7 +53,7 @@ void testApp::setup(){
         recordContext.toggleMirror();
     }
     
-       animateView();
+      // animateView();
 }
 
 
@@ -451,15 +431,33 @@ ofPoint testApp::getCurrentPoint(){
 }
 
 void testApp::loadData(){
-    ofFileDialogResult result = ofSystemLoadDialog("Please select a file");    
+    //ofFileDialogResult result = ofSystemLoadDialog("Please select a file");    
+    
+    totalPointsHit = 0;
+    totalPointCount = 0;
+    showNums = false;
+    showAllPoints = false;
+    
+    
+    xmlDir = ofDirectory();
+    xmlDir.open(ofToDataPath("xml"));
+    
+    int numXmls = xmlDir.listDir(); 
     
     ofxXmlSettings xml;
-    xml.loadFile(result.filePath);
+    xml.loadFile(xmlDir.getPath(currentXml));
+    
+    currentXml++;
+    if(currentXml >= numXmls){
+        currentXml = 0;
+    }
+    
+    lines.clear();
     
     xml.pushTag("Lines");
     
     string currentImageFilename = xml.getAttribute("Image", "filename", "");
-    currentDrawingImage.loadImage(currentImageFilename);
+    currentDrawingImage.loadImage(ofToDataPath(currentImageFilename));
     
     currentHint = xml.getAttribute("Image", "hint", "");
 
@@ -481,6 +479,38 @@ void testApp::loadData(){
         
         xml.popTag();
     }
+    
+    // refresh state--------------
+    
+    prevLineNum  = 0;
+    
+    pointBaseNeedsRefresh = false;
+    
+    victory = false;
+    
+    currentPointNum = 0;
+    currentLineNum = 0;
+    
+    timeStopped = false;
+    
+    nextPointNum = 1;
+    nextLineNum = 0;
+    
+    currentPoint =   getCurrentPoint();
+    nextPoint = getNextPoint();
+    
+    currentDrawingSegment = 0;
+    
+    drawing.clear();
+    drawing.push_back(ofPolyline());
+    
+    drawingCanvas.begin();
+    ofClear(255, 0);
+    drawingCanvas.end();
+    
+    animateView();
+
+
 }
 
 ofPoint testApp::convertToDrawingPoint(ofPoint p){
@@ -500,10 +530,7 @@ void testApp::keyPressed(int key){
         showNums = !showNums;
     }
     
-    if(key == 'l'){
-        showLines = !showLines;
-    }
-    
+
     if(key == ' '){
         prevCanvasScale = currentScale();
         previousViewTarget = getViewTarget(); // store it before it changes for tweening
@@ -554,6 +581,10 @@ void testApp::keyPressed(int key){
     
     if(key == 'r'){
         fullReveal();
+    }
+    
+    if(key == 'l'){
+        loadData();
     }
 }
 
